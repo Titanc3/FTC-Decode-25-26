@@ -30,6 +30,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -65,7 +66,8 @@ import java.util.List;
 @TeleOp(name = "testApril", group = "test")
 
 public class testApril extends LinearOpMode {
-
+	
+	private VoltageSensor hubVoltSens;
 	private DcMotor frontLeft;
 	private DcMotor frontRight;
 	private DcMotor backLeft;
@@ -73,6 +75,8 @@ public class testApril extends LinearOpMode {
 	private DcMotor shooterL;
 	private DcMotor shooterR;
 	private DcMotor intake;
+	double voltage;
+	double vMult;
 
 	private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
 
@@ -134,12 +138,15 @@ public class testApril extends LinearOpMode {
 		shooterL = hardwareMap.get(DcMotor.class, "shooterL");
 		shooterR = hardwareMap.get(DcMotor.class, "shooterR");
 		intake = hardwareMap.get(DcMotor.class, "intake");
+		hubVoltSens = hardwareMap.get(VoltageSensor.class, "Control Hub");
 		
 		
 		frontLeft.setDirection(DcMotor.Direction.REVERSE);
 		frontRight.setDirection(DcMotor.Direction.FORWARD);
 		backLeft.setDirection(DcMotor.Direction.REVERSE);
 		backRight.setDirection(DcMotor.Direction.FORWARD);
+		
+		
 		
 		// Create the AprilTag processor the easy way.
 		aprilTag = AprilTagProcessor.easyCreateWithDefaults();
@@ -170,19 +177,28 @@ public class testApril extends LinearOpMode {
 				telemetry.addLine(String.format("XYZ %6.1f %6.1f %6.1f  (inch)", detection.ftcPose.x, detection.ftcPose.y, detection.ftcPose.z));
 				telemetry.addLine(String.format("PRY %6.1f %6.1f %6.1f  (deg)", detection.ftcPose.pitch, detection.ftcPose.roll, detection.ftcPose.yaw));
 				telemetry.addLine(String.format("RBE %6.1f %6.1f %6.1f  (inch, deg, deg)", detection.ftcPose.range, detection.ftcPose.bearing, detection.ftcPose.elevation));
-			
-				if (Math.abs(detection.ftcPose.x) > 0.5) {
-					double xAlign = detection.ftcPose.x*0.15;
-					frontLeft.setPower(xAlign);
-					frontRight.setPower(-1*xAlign);
-					backLeft.setPower(xAlign);
-					backRight.setPower(-1*xAlign);
-				}
-				else {
-					frontLeft.setPower(0);
-					frontRight.setPower(0);
-					backLeft.setPower(0);
-					backRight.setPower(0);
+				if (detection.id == 20 || detection.id == 24){
+					voltage = hubVoltSens.getVoltage();
+					vMult = 12/voltage;
+					if (Math.abs(detection.ftcPose.x) > 0.5*(40/detection.ftcPose.y)) {
+						double xAlign = detection.ftcPose.x*0.1*clipToOne(40/detection.ftcPose.y);
+						if (detection.ftcPose.x < 0) {xAlign -= 0.1;}
+						else {xAlign += 0.1;}
+						
+						frontLeft.setPower(xAlign);
+						frontRight.setPower(-1*xAlign);
+						backLeft.setPower(xAlign);
+						backRight.setPower(-1*xAlign);
+						shooterL.setPower(((0.1*(detection.ftcPose.y/160))+0.46)*vMult);
+						shooterR.setPower(((-0.1*(detection.ftcPose.y/160))-0.46)*vMult);
+					}
+					else {
+						frontLeft.setPower(0);
+						frontRight.setPower(0);
+						backLeft.setPower(0);
+						backRight.setPower(0);
+						intake.setPower(0.7);
+					}
 				}
 			}
 			else {
@@ -202,5 +218,14 @@ public class testApril extends LinearOpMode {
 		telemetry.addLine("RBE = Range, Bearing & Elevation");
 
 	}   // end method telemetryAprilTag()
+	
+	private double clipToOne(double intx) {
+		if (intx < -1) {
+		  intx = -1;
+		} else if (intx > 1) {
+		  intx = 1;
+		}
+		return intx;
+	}
 
 }   // end class
