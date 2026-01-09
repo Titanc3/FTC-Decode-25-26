@@ -177,9 +177,13 @@ public class testApril extends LinearOpMode {
 				telemetry.addLine(String.format("XYZ %6.1f %6.1f %6.1f  (inch)", detection.ftcPose.x, detection.ftcPose.y, detection.ftcPose.z));
 				telemetry.addLine(String.format("PRY %6.1f %6.1f %6.1f  (deg)", detection.ftcPose.pitch, detection.ftcPose.roll, detection.ftcPose.yaw));
 				telemetry.addLine(String.format("RBE %6.1f %6.1f %6.1f  (inch, deg, deg)", detection.ftcPose.range, detection.ftcPose.bearing, detection.ftcPose.elevation));
+				
 				if (detection.id == 20 || detection.id == 24){
 					voltage = hubVoltSens.getVoltage();
 					vMult = 12/voltage;
+					double formula = ((0.02*clipToOne((detection.ftcPose.y-40)/120))+0.50)*vMult;
+					telemetry.addLine(Double.toString(formula));
+					
 					if (Math.abs(detection.ftcPose.x) > 0.5*(40/detection.ftcPose.y)) {
 						double xAlign = detection.ftcPose.x*0.1*clipToOne(40/detection.ftcPose.y);
 						if (detection.ftcPose.x < 0) {xAlign -= 0.1;}
@@ -189,10 +193,13 @@ public class testApril extends LinearOpMode {
 						frontRight.setPower(-1*xAlign);
 						backLeft.setPower(xAlign);
 						backRight.setPower(-1*xAlign);
-						shooterL.setPower(((0.1*(detection.ftcPose.y/160))+0.46)*vMult);
-						shooterR.setPower(((-0.1*(detection.ftcPose.y/160))-0.46)*vMult);
+						shooterL.setPower(formula);
+						shooterR.setPower(formula * -1);
 					}
+					
 					else {
+						shooterL.setPower(formula);
+						shooterR.setPower(formula * -1);
 						frontLeft.setPower(0);
 						frontRight.setPower(0);
 						backLeft.setPower(0);
@@ -220,8 +227,8 @@ public class testApril extends LinearOpMode {
 	}   // end method telemetryAprilTag()
 	
 	private double clipToOne(double intx) {
-		if (intx < -1) {
-		  intx = -1;
+		if (intx < 0) {
+		  intx = 0;
 		} else if (intx > 1) {
 		  intx = 1;
 		}
