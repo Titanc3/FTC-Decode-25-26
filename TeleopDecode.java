@@ -257,7 +257,7 @@ public class TeleopDecode extends OpMode { // NOT linearopmode, processes are di
 					voltage = hubVoltSens.getVoltage();
 					vMult = 12/voltage;
 					double distCalibration = clipToOne(-1*(detection.ftcPose.y/160/2)+1); // closer: var->1 farther: var->0.5
-					double formula = (1.22E-03*detection.ftcPose.y + 0.378)*vMult;
+					double formula = (1.22E-03*(detection.ftcPose.y+4) + 0.378)*vMult; // x+4 to add fine adjustment to firing
 					telemetry.addLine(Double.toString(formula));
 					
 					
